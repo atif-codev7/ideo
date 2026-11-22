@@ -28,9 +28,9 @@ class SchedulerEngine:
             self.is_running = False
             logger.info("IDEO Background Scheduler stopped.")
 
-    def _execute_switch(self, target_theme: str, source: str):
-        logger.info(f"Executing scheduled theme switch to {target_theme} via {source}")
-        success = ThemeEngine.set_theme(target_theme, trigger_source=source)
+    def _execute_switch(self, target_theme: str, source: str, profile_id: Optional[int] = None):
+        logger.info(f"Executing scheduled theme switch to {target_theme} via {source} (Profile ID: {profile_id})")
+        success = ThemeEngine.set_theme(target_theme, trigger_source=source, profile_id=profile_id)
         if success and self.on_theme_change_callback:
             try:
                 self.on_theme_change_callback(ThemeEngine.get_current_theme())
@@ -46,6 +46,9 @@ class SchedulerEngine:
         city = pref.get("city_name", "New Delhi")
         solar_enabled = pref.get("solar_schedule_enabled", True)
 
+        dark_p = Repository.get_profile_by_name("Dark Mode")
+        light_p = Repository.get_profile_by_name("Light Mode")
+
         # 1. Midnight job to refresh daily solar times
         self.scheduler.add_job(
             self.refresh_jobs,
@@ -60,25 +63,25 @@ class SchedulerEngine:
             sunrise_dt = solar_times["sunrise"]
             sunset_dt = solar_times["sunset"]
 
-            # Sunrise -> Light
+            # Sunrise -> Light Mode
             self.scheduler.add_job(
                 self._execute_switch,
                 trigger=CronTrigger(hour=sunrise_dt.hour, minute=sunrise_dt.minute),
-                args=["light", "solar_sunrise"],
+                args=["light", "solar_sunrise", light_p["id"] if light_p else None],
                 id="solar_sunrise_job",
                 replace_existing=True
             )
 
-            # Sunset -> Dark
+            # Sunset -> Dark Mode
             self.scheduler.add_job(
                 self._execute_switch,
                 trigger=CronTrigger(hour=sunset_dt.hour, minute=sunset_dt.minute),
-                args=["dark", "solar_sunset"],
+                args=["dark", "solar_sunset", dark_p["id"] if dark_p else None],
                 id="solar_sunset_job",
                 replace_existing=True
             )
 
-        # 3. Add Custom Schedules from DB
+        # 3. Add Custom Schedules from DB with wired profile_id
         schedules = Repository.get_schedules()
         for s in schedules:
             if not s.get("is_active"):
@@ -87,6 +90,7 @@ class SchedulerEngine:
             stype = s.get("schedule_type")
             target = s.get("target_theme", "dark")
             sid = s.get("id")
+            pid = s.get("profile_id")
 
             if stype == "custom_time" and s.get("custom_time"):
                 try:
@@ -96,7 +100,7 @@ class SchedulerEngine:
                     self.scheduler.add_job(
                         self._execute_switch,
                         trigger=CronTrigger(hour=hour, minute=minute),
-                        args=[target, f"custom_schedule_{sid}"],
+                        args=[target, f"custom_schedule_{sid}", pid],
                         id=f"custom_job_{sid}",
                         replace_existing=True
                     )

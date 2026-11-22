@@ -59,13 +59,14 @@ class ScheduleTab(ctk.CTkFrame):
         self.add_frame = ctk.CTkFrame(self, corner_radius=8)
         self.add_frame.pack(padx=20, pady=4, fill="x")
 
-        self.time_entry = ctk.CTkEntry(self.add_frame, placeholder_text="HH:MM (e.g. 23:00)", width=140)
+        self.time_entry = ctk.CTkEntry(self.add_frame, placeholder_text="HH:MM (e.g. 23:00)", width=130)
         self.time_entry.pack(side="left", padx=10, pady=8)
 
+        # Dynamic profile options from Database
         self.target_menu = ctk.CTkOptionMenu(
             self.add_frame,
-            values=["dark", "light"],
-            width=100
+            values=["Dark Mode", "Light Mode"],
+            width=120
         )
         self.target_menu.pack(side="left", padx=5, pady=8)
 
@@ -88,6 +89,14 @@ class ScheduleTab(ctk.CTkFrame):
         current_city = pref.get("city_name", "New Delhi")
         if current_city in CITIES:
             self.city_menu.set(current_city)
+
+        # Refresh profile dropdown choices dynamically
+        profiles = Repository.get_profiles()
+        profile_names = [p["name"] for p in profiles]
+        if profile_names:
+            self.target_menu.configure(values=profile_names)
+            if self.target_menu.get() not in profile_names:
+                self.target_menu.set(profile_names[0])
 
         for widget in self.schedules_scroll.winfo_children():
             widget.destroy()
@@ -136,7 +145,7 @@ class ScheduleTab(ctk.CTkFrame):
 
     def handle_add_schedule(self):
         raw_time = self.time_entry.get().strip()
-        target = self.target_menu.get().lower()
+        selected_profile_name = self.target_menu.get()
 
         if not raw_time or ":" not in raw_time:
             return
@@ -150,17 +159,16 @@ class ScheduleTab(ctk.CTkFrame):
         except Exception:
             return
 
-        # Fetch profile
-        p_name = "Dark Mode" if target == "dark" else "Light Mode"
-        profile = Repository.get_profile_by_name(p_name)
+        # Fetch profile by name to wire its real foreign key ID and base_theme
+        profile = Repository.get_profile_by_name(selected_profile_name)
         if not profile:
             return
 
-        name = f"{target.title()} Mode at {formatted_time}"
+        name = f"{profile['name']} at {formatted_time}"
         Repository.add_schedule(
             name=name,
             profile_id=profile["id"],
-            target_theme=target,
+            target_theme=profile["base_theme"],
             schedule_type="custom_time",
             custom_time=formatted_time
         )
