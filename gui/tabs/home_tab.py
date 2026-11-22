@@ -91,10 +91,10 @@ class HomeTab(ctk.CTkFrame):
         )
         self.solar_toggle_switch.grid(row=3, column=0, columnspan=2, pady=(8, 15))
 
-        # Latency / Efficiency Footer
+        # Architecture & Efficiency Footer
         self.footer_label = ctk.CTkLabel(
             self,
-            text="⚡ Low-Level COM IThemeManager2 | Idle RAM: 0 MB | 0 Explorer Restarts",
+            text="⚡ Low-Level COM IThemeManager2 | Native VTable Dispatch | 0 Explorer Restarts",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )

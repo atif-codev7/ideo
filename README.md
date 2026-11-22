@@ -2,35 +2,23 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://microsoft.com/windows)
-[![Idle Memory](https://img.shields.io/badge/idle%20RAM-~0MB-brightgreen.svg)]()
+[![Architecture](https://img.shields.io/badge/architecture-COM%20VTable-blueviolet.svg)]()
 [![Tests](https://img.shields.io/badge/pytest-15%2F15%20passing-success.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-An autonomous, low-overhead Windows 11 system utility that dynamically orchestrates OS-level display themes via low-level COM VTable dispatch, solar ephemeris calculations, and background event scheduling.
+An autonomous Windows 11 system utility that dynamically orchestrates OS-level display themes via low-level COM VTable dispatch, offline solar ephemeris calculations, and background event scheduling.
 
 ---
 
 ## 🚀 Key Highlights
 
-* **Direct COM VTable Dispatch:** Communicates directly with undocumented Windows 11 `IThemeManager2` COM interfaces via `ctypes`. Switches taskbar, Start menu, File Explorer, and WinRT applications in **0.02s** without restarting `explorer.exe`.
-* **Zero Idle Overhead:** Operates at **~0 MB idle memory footprint** using native event-driven dispatch rather than resident heavy daemons.
-* **100% Offline Solar Ephemeris Engine:** Computes exact astronomical sunrise and sunset cycles for any geographic coordinate locally without external API dependencies.
+* **Direct COM VTable Dispatch:** Communicates directly with Windows 11's internal `IThemeManager2` COM interface via `ctypes`. Switches taskbar, Start menu, File Explorer, and WinRT applications silently and reliably without restarting `explorer.exe`.
+* **Dual Execution Modes:**
+  * **One-Shot CLI Toggle (`--toggle`):** Instant switch that exits immediately upon completion, leaving zero resident background footprint.
+  * **Background Tray Service:** Sits in the notification area with a CustomTkinter dashboard for real-time solar scheduling and manual overrides.
+* **100% Offline Solar Ephemeris Engine:** Computes exact astronomical sunrise and sunset cycles for any geographic coordinate locally (`astral`), requiring zero external API keys or network connectivity.
 * **Modern Windows 11 UI:** Built with CustomTkinter for rounded corners, fluent styling, and real-time reactive theme matching.
-* **System Tray Daemon:** Sits in the notification area for quick 1-click toggling, status reporting, and background scheduling.
-* **ACID-Compliant Audit Logging:** Tracks all switch triggers, sources, latencies, and statuses in a local SQLite database using SQLAlchemy ORM.
-
----
-
-## 📊 Technical Comparison
-
-| Feature | Auto Dark Mode (.NET) | PowerShell / Registry Scripts | **IDEO (This Project)** |
-|:---|:---:|:---:|:---:|
-| **Language / Runtime** | C# / .NET Runtime | PowerShell / Batch | **Pure Python + Windows COM** |
-| **Idle Memory (RAM)** | 40 MB – 80 MB | 0 MB (one-time script) | **~0 MB idle** |
-| **Explorer Restarts** | Periodic | Frequent (Closes open folders) | **Zero Restarts** |
-| **Windows 11 Taskbar** | Supported | Broken (Taskbar desyncs) | **Native 100% Synced** |
-| **Solar Scheduling** | Requires Weather API | None | **100% Offline Solar Math** |
-| **Switch Latency** | ~500ms | 1000ms – 3000ms | **~20ms (0.02s)** |
+* **Persistent SQLite Audit Trail:** Records theme transitions, trigger sources (GUI, system tray, solar scheduler, custom cron), execution latencies, and statuses in a local SQLite database using SQLAlchemy ORM.
 
 ---
 
@@ -58,7 +46,7 @@ An autonomous, low-overhead Windows 11 system utility that dynamically orchestra
                │      ┌───────────────────────────────────────────────┐      │
                │      │        Windows COM Interop (ctypes)           │      │
                │      │  CLSID_ThemeManager2 -> IThemeManager2 VTable │      │
-               │      │      (SetCurrentTheme / 0.02s / 0MB RAM)      │      │
+               │      │            (SetCurrentTheme Dispatch)         │      │
                │      └───────────────────────┬───────────────────────┘      │
                └──────────────────────────────┼──────────────────────────────┘
                                               │
@@ -66,31 +54,30 @@ An autonomous, low-overhead Windows 11 system utility that dynamically orchestra
                              ┌────────────────────────────────┐
                              │    SQLite3 + SQLAlchemy ORM    │
                              │   (Preferences, Schedules,     │
-                             │      AppRules, SwitchLogs)     │
+                             │          SwitchLogs)           │
                              └────────────────────────────────┘
 ```
 
 ---
 
-## 🗄️ Database Schema
+## 🗄️ Relational Database Schema
 
-The SQLite database (`data/ideo.db`) consists of 4 relational tables:
-1. `user_preferences`: Active theme, city, coordinates, solar toggle status.
-2. `schedules`: Active sunrise, sunset, and custom cron time configurations.
-3. `app_rules`: Per-process override configurations.
-4. `switch_logs`: High-resolution audit trail of timestamp, latency (ms), source, and status.
+The SQLite database (`data/ideo.db`) consists of 3 relational models:
+1. **`user_preferences`**: Stores active theme, configured city, geographic coordinates, and solar schedule toggle status.
+2. **`schedules`**: Manages configured switch times (solar sunrise, solar sunset, or custom 24-hr cron formats).
+3. **`switch_logs`**: Comprehensive audit log recording timestamp, latency (ms), trigger source, and execution status.
 
 ---
 
 ## 🧪 Testing
 
-The project includes an automated test suite covering database transactions, solar ephemeris accuracy, scheduler registration, and COM state validation:
+The project includes an automated test suite verifying database transactions, solar ephemeris accuracy, scheduler registration, and COM state validation:
 
 ```bash
 python -m pytest tests -v
 ```
 
-**Results:** `15 passed in 0.44s`
+**Test Status:** `15 passed in 0.74s`
 
 ---
 
@@ -103,14 +90,12 @@ python main.py
 ```
 
 ### 2. Standalone Build
-Execute `build.bat` to generate `dist/IDEO.exe`.
+Execute `build.bat` to package into a standalone binary (`dist/IDEO.exe`) via PyInstaller.
 
 ---
 
-## 🎓 Academic Information
+## 👨‍💻 Project Information
 
+* **Author:** Atif Farooqui
+* **Program:** Bachelor of Technology in Computer Science & Engineering (B.Tech CSE)
 * **Institution:** Jamia Hamdard, New Delhi
-* **Degree:** Bachelor of Technology in Computer Science & Engineering (B.Tech CSE)
-* **Semester:** 7th Semester (Minor Project)
-* **Author:** Atif Farooqui (Enrollment: 2023-310-060)
-* **Supervisor:** Ms. Gautami Tripathi

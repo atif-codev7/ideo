@@ -51,22 +51,6 @@ class Schedule(Base):
             "is_active": self.is_active
         }
 
-class AppRule(Base):
-    __tablename__ = "app_rules"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    process_name = Column(String(100), nullable=False)  # e.g., "code.exe"
-    enforce_theme = Column(String(10), default="dark")  # "dark", "light", "system"
-    is_active = Column(Boolean, default=True)
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "process_name": self.process_name,
-            "enforce_theme": self.enforce_theme,
-            "is_active": self.is_active
-        }
-
 class SwitchLog(Base):
     __tablename__ = "switch_logs"
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from database.db_session import SessionLocal
-from database.models import UserPreference, Schedule, AppRule, SwitchLog
+from database.models import UserPreference, Schedule, SwitchLog
 
 def utc_now():
     return datetime.now(timezone.utc)
