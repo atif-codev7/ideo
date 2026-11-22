@@ -30,17 +30,14 @@ class SchedulerEngine:
 
     def _execute_switch(self, target_theme: str, source: str):
         logger.info(f"Executing scheduled theme switch to {target_theme} via {source}")
-        success = ThemeEngine.set_theme(target_theme, trigger_source=source)
+        success = ThemeEngine.apply_profile(target_theme, trigger_source=source)
         if success and self.on_theme_change_callback:
             try:
-                self.on_theme_change_callback(target_theme)
+                self.on_theme_change_callback(ThemeEngine.get_current_theme())
             except Exception as e:
                 logger.error(f"Error in on_theme_change_callback: {e}")
 
     def refresh_jobs(self):
-        """
-        Clears existing scheduled jobs and reloads from DB preferences and schedules table.
-        """
         self.scheduler.remove_all_jobs()
 
         pref = Repository.get_preferences()
@@ -63,20 +60,20 @@ class SchedulerEngine:
             sunrise_dt = solar_times["sunrise"]
             sunset_dt = solar_times["sunset"]
 
-            # Sunrise -> Light
+            # Sunrise -> Full Light
             self.scheduler.add_job(
                 self._execute_switch,
                 trigger=CronTrigger(hour=sunrise_dt.hour, minute=sunrise_dt.minute),
-                args=["light", "solar_sunrise"],
+                args=["Full Light", "solar_sunrise"],
                 id="solar_sunrise_job",
                 replace_existing=True
             )
 
-            # Sunset -> Dark
+            # Sunset -> Full Dark
             self.scheduler.add_job(
                 self._execute_switch,
                 trigger=CronTrigger(hour=sunset_dt.hour, minute=sunset_dt.minute),
-                args=["dark", "solar_sunset"],
+                args=["Full Dark", "solar_sunset"],
                 id="solar_sunset_job",
                 replace_existing=True
             )
@@ -88,7 +85,7 @@ class SchedulerEngine:
                 continue
 
             stype = s.get("schedule_type")
-            target = s.get("target_theme")
+            target = s.get("target_theme", "Full Dark")
             sid = s.get("id")
 
             if stype == "custom_time" and s.get("custom_time"):
@@ -107,9 +104,6 @@ class SchedulerEngine:
                     logger.warning(f"Failed to parse custom schedule time {s.get('custom_time')}: {e}")
 
     def get_scheduled_jobs(self) -> List[dict]:
-        """
-        Returns a list of all currently registered scheduler jobs.
-        """
         jobs = []
         for job in self.scheduler.get_jobs():
             jobs.append({

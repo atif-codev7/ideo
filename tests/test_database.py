@@ -13,61 +13,74 @@ from database.repository import Repository
 def setup_db():
     init_db()
 
-def test_get_preferences():
-    pref = Repository.get_preferences()
-    assert pref is not None
-    assert "city_name" in pref
-    assert "current_theme" in pref
-    assert pref["city_name"] == "New Delhi"
+def test_seeded_profiles():
+    profiles = Repository.get_profiles()
+    names = [p["name"] for p in profiles]
+    assert "Full Dark" in names
+    assert "Full Light" in names
+    assert "Hybrid Focus" in names
 
-def test_update_preferences():
-    updated = Repository.update_preferences({"city_name": "Mumbai", "solar_schedule_enabled": False})
-    assert updated["city_name"] == "Mumbai"
-    assert updated["solar_schedule_enabled"] is False
-
-    # Restore
-    Repository.update_preferences({"city_name": "New Delhi", "solar_schedule_enabled": True})
-
-def test_add_and_delete_schedule():
-    sched = Repository.add_schedule(
-        name="Test Bedtime Dark",
-        target_theme="dark",
-        schedule_type="custom_time",
-        custom_time="23:30"
+def test_create_and_delete_custom_profile():
+    p = Repository.create_profile(
+        name="Reading Night",
+        system_theme="dark",
+        apps_theme="light",
+        wallpaper_path="C:/wallpapers/night.jpg"
     )
-    assert sched["id"] is not None
-    assert sched["custom_time"] == "23:30"
+    assert p["id"] is not None
+    assert p["name"] == "Reading Night"
 
     # Delete
-    deleted = Repository.delete_schedule(sched["id"])
+    deleted = Repository.delete_profile(p["id"])
     assert deleted is True
 
-def test_toggle_schedule():
+def test_prevent_duplicate_profile_name():
+    with pytest.raises(ValueError, match="already exists"):
+        Repository.create_profile("Full Dark", "dark", "dark")
+
+def test_prevent_invalid_theme_in_profile():
+    with pytest.raises(ValueError, match="must be 'dark' or 'light'"):
+        Repository.create_profile("Invalid Theme", "blue", "yellow")
+
+def test_schedule_profile_foreign_key():
+    dark_p = Repository.get_profile_by_name("Full Dark")
+    assert dark_p is not None
+
     sched = Repository.add_schedule(
-        name="Test Morning Light",
-        target_theme="light",
+        name="Late Night Coding",
+        profile_id=dark_p["id"],
+        target_theme="Full Dark",
         schedule_type="custom_time",
-        custom_time="07:00"
+        custom_time="01:30"
     )
-    assert sched["is_active"] is True
+    assert sched["profile_id"] == dark_p["id"]
 
-    toggled = Repository.toggle_schedule(sched["id"], False)
-    assert toggled is True
+    # Deleting dark_p should be blocked by business constraint
+    with pytest.raises(ValueError, match="actively referenced"):
+        Repository.delete_profile(dark_p["id"])
 
-    # Cleanup
+    # Cleanup schedule
     Repository.delete_schedule(sched["id"])
 
-def test_log_switch_and_history():
+def test_log_switch_and_empirical_metrics():
+    dark_p = Repository.get_profile_by_name("Full Dark")
     log_entry = Repository.log_switch(
-        switched_to="dark",
-        trigger_source="pytest_test",
-        duration_ms=18.5,
-        status="SUCCESS"
+        switched_to="Full Dark",
+        trigger_source="pytest_telemetry",
+        duration_ms=42.5,
+        status="SUCCESS",
+        profile_id=dark_p["id"] if dark_p else None
     )
-    assert log_entry["switched_to"] == "dark"
-    assert log_entry["trigger_source"] == "pytest_test"
-    assert log_entry["execution_duration_ms"] == 18.5
+    assert log_entry["switched_to"] == "Full Dark"
+    assert log_entry["execution_duration_ms"] == 42.5
 
-    logs = Repository.get_recent_logs(limit=10)
-    assert len(logs) > 0
-    assert any(l["trigger_source"] == "pytest_test" for l in logs)
+    # Check empirical metrics
+    metrics = Repository.get_empirical_metrics()
+    assert "average_latency_ms" in metrics
+    assert "total_switches" in metrics
+    assert "resident_memory_mb" in metrics
+    assert isinstance(metrics["average_latency_ms"], float)
+    assert isinstance(metrics["total_switches"], int)
+    assert isinstance(metrics["resident_memory_mb"], float)
+    assert metrics["total_switches"] >= 1
+    assert metrics["resident_memory_mb"] > 0.0

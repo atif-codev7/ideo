@@ -2,23 +2,26 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://microsoft.com/windows)
-[![Architecture](https://img.shields.io/badge/architecture-COM%20VTable-blueviolet.svg)]()
-[![Tests](https://img.shields.io/badge/pytest-15%2F15%20passing-success.svg)]()
+[![Architecture](https://img.shields.io/badge/architecture-COM%20VTable%20%2B%20Fallback-blueviolet.svg)]()
+[![Tests](https://img.shields.io/badge/pytest-17%2F17%20passing-success.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-An autonomous Windows 11 system utility that dynamically orchestrates OS-level display themes via low-level COM VTable dispatch, offline solar ephemeris calculations, and background event scheduling.
+An autonomous Windows 11 system utility that dynamically orchestrates OS-level display themes via low-level COM VTable dispatch, defensive registry fallback, offline solar ephemeris calculations, and relational environment profiles.
 
 ---
 
 ## 🚀 Key Highlights
 
-* **Direct COM VTable Dispatch:** Communicates directly with Windows 11's internal `IThemeManager2` COM interface via `ctypes`. Switches taskbar, Start menu, File Explorer, and WinRT applications silently and reliably without restarting `explorer.exe`.
+* **Direct COM VTable Dispatch with Defensive Fallback:** Communicates directly with Windows 11's internal `IThemeManager2` COM interface via `ctypes`. If running in restricted or modified environments, it gracefully falls back to Windows registry configuration and `WM_SETTINGCHANGE` broadcast notification.
+* **Environment Profiles & Hybrid Focus Mode:**
+  * **Full Dark:** Synchronizes both System (Taskbar/Start) and Applications to Dark Mode.
+  * **Full Light:** Synchronizes both System and Applications to Light Mode.
+  * **Hybrid Focus:** Sets System (Taskbar & Start Menu) to Dark while keeping Applications (Browsers, File Explorer) in Light Mode to eliminate glare while maintaining reading clarity.
 * **Dual Execution Modes:**
   * **One-Shot CLI Toggle (`--toggle`):** Instant switch that exits immediately upon completion, leaving zero resident background footprint.
-  * **Background Tray Service:** Sits in the notification area with a CustomTkinter dashboard for real-time solar scheduling and manual overrides.
+  * **Background Tray Service:** Sits in the notification area with a CustomTkinter dashboard for real-time solar scheduling and manual profile selection.
 * **100% Offline Solar Ephemeris Engine:** Computes exact astronomical sunrise and sunset cycles for any geographic coordinate locally (`astral`), requiring zero external API keys or network connectivity.
-* **Modern Windows 11 UI:** Built with CustomTkinter for rounded corners, fluent styling, and real-time reactive theme matching.
-* **Persistent SQLite Audit Trail:** Records theme transitions, trigger sources (GUI, system tray, solar scheduler, custom cron), execution latencies, and statuses in a local SQLite database using SQLAlchemy ORM.
+* **Empirical Performance Telemetry:** Continuously tracks live resident memory consumption (`psutil`) and queries SQLite for real measured switch latency across all logged events.
 
 ---
 
@@ -44,40 +47,46 @@ An autonomous Windows 11 system utility that dynamically orchestrates OS-level d
                │              │                               │              │
                │              ▼                               ▼              │
                │      ┌───────────────────────────────────────────────┐      │
-               │      │        Windows COM Interop (ctypes)           │      │
-               │      │  CLSID_ThemeManager2 -> IThemeManager2 VTable │      │
-               │      │            (SetCurrentTheme Dispatch)         │      │
+               │      │  Primary: COM VTable (IThemeManager2 ctypes)  │      │
+               │      │  Fallback: Registry + WM_SETTINGCHANGE        │      │
                │      └───────────────────────┬───────────────────────┘      │
                └──────────────────────────────┼──────────────────────────────┘
                                               │
                                               ▼
                              ┌────────────────────────────────┐
                              │    SQLite3 + SQLAlchemy ORM    │
-                             │   (Preferences, Schedules,     │
-                             │          SwitchLogs)           │
+                             │  theme_profiles (1) -> (N)     │
+                             │     [schedules, switch_logs]   │
                              └────────────────────────────────┘
 ```
 
 ---
 
-## 🗄️ Relational Database Schema
+## 🗄️ Relational Database Schema (ER Diagram)
 
-The SQLite database (`data/ideo.db`) consists of 3 relational models:
-1. **`user_preferences`**: Stores active theme, configured city, geographic coordinates, and solar schedule toggle status.
-2. **`schedules`**: Manages configured switch times (solar sunrise, solar sunset, or custom 24-hr cron formats).
-3. **`switch_logs`**: Comprehensive audit log recording timestamp, latency (ms), trigger source, and execution status.
+The SQLite database (`data/ideo.db`) enforces relational integrity across 4 models:
+
+1. **`theme_profiles` (Primary Entity):**
+   * Stores profile presets (`Full Dark`, `Full Light`, `Hybrid Focus`, and custom entries).
+   * Defines individual `system_theme` (Taskbar/Start) and `apps_theme` (WinRT/Browsers/Explorer).
+   * **Relationships:**
+     * `theme_profiles (1)` ➔ `schedules (N)` (Foreign Key with orphan deletion cascade).
+     * `theme_profiles (1)` ➔ `switch_logs (N)` (Foreign Key tracking profile switches).
+2. **`user_preferences`:** Stores active profile reference, configured city, geographic coordinates, and solar schedule status.
+3. **`schedules`:** Manages configured profile switch times (solar sunrise, solar sunset, or custom 24-hr cron formats).
+4. **`switch_logs`:** High-resolution audit log recording timestamp, latency (ms), trigger source, and execution status.
 
 ---
 
 ## 🧪 Testing
 
-The project includes an automated test suite verifying database transactions, solar ephemeris accuracy, scheduler registration, and COM state validation:
+The automated test suite verifies profile constraints, foreign key referential integrity, solar ephemeris accuracy, scheduler registration, and COM/fallback execution:
 
 ```bash
 python -m pytest tests -v
 ```
 
-**Test Status:** `15 passed in 0.74s`
+**Test Status:** `17 passed in 1.34s`
 
 ---
 

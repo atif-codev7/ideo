@@ -12,24 +12,24 @@ class ScheduleTab(ctk.CTkFrame):
         # Title
         self.title_label = ctk.CTkLabel(
             self,
-            text="Automated Theme Schedules",
+            text="Automated Profile Schedules",
             font=ctk.CTkFont(size=20, weight="bold")
         )
-        self.title_label.pack(pady=(20, 10))
+        self.title_label.pack(pady=(15, 8))
 
         # Solar Config Section
         self.solar_section = ctk.CTkFrame(self, corner_radius=10)
-        self.solar_section.pack(padx=20, pady=10, fill="x")
+        self.solar_section.pack(padx=20, pady=6, fill="x")
 
         self.solar_header = ctk.CTkLabel(
             self.solar_section,
             text="Geographic Location (Solar Ephemeris)",
-            font=ctk.CTkFont(size=14, weight="bold")
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        self.solar_header.grid(row=0, column=0, columnspan=2, padx=15, pady=(10, 5), sticky="w")
+        self.solar_header.grid(row=0, column=0, columnspan=2, padx=15, pady=(8, 4), sticky="w")
 
         self.city_label = ctk.CTkLabel(self.solar_section, text="Select City:")
-        self.city_label.grid(row=1, column=0, padx=15, pady=5, sticky="w")
+        self.city_label.grid(row=1, column=0, padx=15, pady=4, sticky="w")
 
         city_names = list(CITIES.keys())
         self.city_menu = ctk.CTkOptionMenu(
@@ -37,45 +37,49 @@ class ScheduleTab(ctk.CTkFrame):
             values=city_names,
             command=self.handle_city_changed
         )
-        self.city_menu.grid(row=1, column=1, padx=15, pady=5, sticky="e")
+        self.city_menu.grid(row=1, column=1, padx=15, pady=4, sticky="e")
 
         self.solar_desc = ctk.CTkLabel(
             self.solar_section,
-            text="Switches to Light Mode at sunrise and Dark Mode at sunset automatically.",
+            text="Sunrise ➔ Full Light  |  Sunset ➔ Full Dark automatically.",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
-        self.solar_desc.grid(row=2, column=0, columnspan=2, padx=15, pady=(2, 10), sticky="w")
+        self.solar_desc.grid(row=2, column=0, columnspan=2, padx=15, pady=(2, 8), sticky="w")
 
         # Custom Time Schedules Section
         self.custom_header = ctk.CTkLabel(
             self,
-            text="Custom Time Schedules",
-            font=ctk.CTkFont(size=15, weight="bold")
+            text="Custom Profile Schedules",
+            font=ctk.CTkFont(size=14, weight="bold")
         )
-        self.custom_header.pack(pady=(15, 5), padx=20, anchor="w")
+        self.custom_header.pack(pady=(10, 4), padx=20, anchor="w")
 
         # Add New Schedule Bar
         self.add_frame = ctk.CTkFrame(self, corner_radius=8)
-        self.add_frame.pack(padx=20, pady=5, fill="x")
+        self.add_frame.pack(padx=20, pady=4, fill="x")
 
-        self.time_entry = ctk.CTkEntry(self.add_frame, placeholder_text="HH:MM (e.g. 23:00)", width=140)
+        self.time_entry = ctk.CTkEntry(self.add_frame, placeholder_text="HH:MM (e.g. 23:00)", width=130)
         self.time_entry.pack(side="left", padx=10, pady=8)
 
-        self.target_theme_menu = ctk.CTkOptionMenu(self.add_frame, values=["dark", "light"], width=90)
-        self.target_theme_menu.pack(side="left", padx=5, pady=8)
+        self.target_profile_menu = ctk.CTkOptionMenu(
+            self.add_frame,
+            values=["Full Dark", "Full Light", "Hybrid Focus"],
+            width=120
+        )
+        self.target_profile_menu.pack(side="left", padx=5, pady=8)
 
         self.add_btn = ctk.CTkButton(
             self.add_frame,
             text="Add Schedule",
-            width=110,
+            width=100,
             command=self.handle_add_schedule
         )
         self.add_btn.pack(side="left", padx=10, pady=8)
 
         # Schedules List (Scrollable)
-        self.schedules_scroll = ctk.CTkScrollableFrame(self, height=180, corner_radius=8)
-        self.schedules_scroll.pack(padx=20, pady=10, fill="both", expand=True)
+        self.schedules_scroll = ctk.CTkScrollableFrame(self, height=160, corner_radius=8)
+        self.schedules_scroll.pack(padx=20, pady=8, fill="both", expand=True)
 
         self.refresh()
 
@@ -85,7 +89,6 @@ class ScheduleTab(ctk.CTkFrame):
         if current_city in CITIES:
             self.city_menu.set(current_city)
 
-        # Clear existing schedule cards
         for widget in self.schedules_scroll.winfo_children():
             widget.destroy()
 
@@ -97,27 +100,28 @@ class ScheduleTab(ctk.CTkFrame):
 
         for s in schedules:
             row = ctk.CTkFrame(self.schedules_scroll, corner_radius=6)
-            row.pack(fill="x", pady=4, padx=5)
+            row.pack(fill="x", pady=3, padx=5)
 
-            icon = "🌙" if s.get("target_theme") == "dark" else "☀️"
+            target = s.get("target_theme", "Full Dark")
+            icon = "🌙" if "dark" in target.lower() else ("☀️" if "light" in target.lower() else "⚡")
             stype = s.get("schedule_type")
             timing = s.get("custom_time") if stype == "custom_time" else stype.replace("_", " ").title()
 
-            info_text = f"{icon} {s.get('name', 'Schedule')}  •  {timing}  •  Target: {s.get('target_theme').upper()}"
-            lbl = ctk.CTkLabel(row, text=info_text, font=ctk.CTkFont(size=12))
-            lbl.pack(side="left", padx=10, pady=6)
+            info_text = f"{icon} {s.get('name', 'Schedule')}  •  {timing}  •  Target: {target}"
+            lbl = ctk.CTkLabel(row, text=info_text, font=ctk.CTkFont(size=11))
+            lbl.pack(side="left", padx=10, pady=5)
 
             sid = s.get("id")
             del_btn = ctk.CTkButton(
                 row,
                 text="Delete",
-                width=60,
-                height=24,
+                width=55,
+                height=22,
                 fg_color="#ef4444",
                 hover_color="#dc2626",
                 command=lambda id=sid: self.handle_delete_schedule(id)
             )
-            del_btn.pack(side="right", padx=10, pady=6)
+            del_btn.pack(side="right", padx=10, pady=5)
 
     def handle_city_changed(self, selected_city):
         if selected_city in CITIES:
@@ -132,7 +136,7 @@ class ScheduleTab(ctk.CTkFrame):
 
     def handle_add_schedule(self):
         raw_time = self.time_entry.get().strip()
-        target = self.target_theme_menu.get().lower()
+        target_profile_name = self.target_profile_menu.get()
 
         if not raw_time or ":" not in raw_time:
             return
@@ -146,10 +150,16 @@ class ScheduleTab(ctk.CTkFrame):
         except Exception:
             return
 
-        name = f"Custom {target.title()} Switch at {formatted_time}"
+        # Fetch profile
+        profile = Repository.get_profile_by_name(target_profile_name)
+        if not profile:
+            return
+
+        name = f"{target_profile_name} at {formatted_time}"
         Repository.add_schedule(
             name=name,
-            target_theme=target,
+            profile_id=profile["id"],
+            target_theme=target_profile_name,
             schedule_type="custom_time",
             custom_time=formatted_time
         )
