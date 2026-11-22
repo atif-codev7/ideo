@@ -13,13 +13,12 @@ An autonomous Windows 11 system utility that dynamically orchestrates OS-level d
 ## 🚀 Key Highlights
 
 * **Direct COM VTable Dispatch with Defensive Fallback:** Communicates directly with Windows 11's internal `IThemeManager2` COM interface via `ctypes`. If running in restricted or modified environments, it gracefully falls back to Windows registry configuration and `WM_SETTINGCHANGE` broadcast notification.
-* **Environment Profiles & Hybrid Focus Mode:**
-  * **Full Dark:** Synchronizes both System (Taskbar/Start) and Applications to Dark Mode.
-  * **Full Light:** Synchronizes both System and Applications to Light Mode.
-  * **Hybrid Focus:** Sets System (Taskbar & Start Menu) to Dark while keeping Applications (Browsers, File Explorer) in Light Mode to eliminate glare while maintaining reading clarity.
+* **Environment Profiles:**
+  * **Dark Mode:** Synchronizes System (Taskbar & Start Menu) and Applications to Dark Mode.
+  * **Light Mode:** Synchronizes System and Applications to Light Mode.
 * **Dual Execution Modes:**
   * **One-Shot CLI Toggle (`--toggle`):** Instant switch that exits immediately upon completion, leaving zero resident background footprint.
-  * **Background Tray Service:** Sits in the notification area with a CustomTkinter dashboard for real-time solar scheduling and manual profile selection.
+  * **Background Tray Service:** Sits in the notification area with a CustomTkinter dashboard for real-time solar scheduling and manual overrides.
 * **100% Offline Solar Ephemeris Engine:** Computes exact astronomical sunrise and sunset cycles for any geographic coordinate locally (`astral`), requiring zero external API keys or network connectivity.
 * **Empirical Performance Telemetry:** Continuously tracks live resident memory consumption (`psutil`) and queries SQLite for real measured switch latency across all logged events.
 
@@ -67,8 +66,8 @@ An autonomous Windows 11 system utility that dynamically orchestrates OS-level d
 The SQLite database (`data/ideo.db`) enforces relational integrity across 4 models:
 
 1. **`theme_profiles` (Primary Entity):**
-   * Stores profile presets (`Full Dark`, `Full Light`, `Hybrid Focus`, and custom entries).
-   * Defines individual `system_theme` (Taskbar/Start) and `apps_theme` (WinRT/Browsers/Explorer).
+   * Stores profile presets (`Dark Mode`, `Light Mode`, and custom entries).
+   * Defines the target `base_theme` ('dark' or 'light') and optional custom wallpaper pairing.
    * **Relationships:**
      * `theme_profiles (1)` ➔ `schedules (N)` (Foreign Key with orphan deletion cascade).
      * `theme_profiles (1)` ➔ `switch_logs (N)` (Foreign Key tracking profile switches).
@@ -86,7 +85,7 @@ The automated test suite verifies profile constraints, foreign key referential i
 python -m pytest tests -v
 ```
 
-**Test Status:** `17 passed in 1.34s`
+**Test Status:** `17 passed in 1.39s`
 
 ---
 

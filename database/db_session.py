@@ -24,36 +24,29 @@ def init_db():
 
     session = SessionLocal()
     try:
-        # 1. Seed Default Theme Profiles if empty
+        # 1. Seed Default Theme Profiles (Dark & Light)
         profiles = session.query(ThemeProfile).all()
         if not profiles:
             p_dark = ThemeProfile(
-                name="Full Dark",
-                system_theme="dark",
-                apps_theme="dark"
+                name="Dark Mode",
+                base_theme="dark"
             )
             p_light = ThemeProfile(
-                name="Full Light",
-                system_theme="light",
-                apps_theme="light"
+                name="Light Mode",
+                base_theme="light"
             )
-            p_hybrid = ThemeProfile(
-                name="Hybrid Focus",
-                system_theme="dark",
-                apps_theme="light"
-            )
-            session.add_all([p_dark, p_light, p_hybrid])
+            session.add_all([p_dark, p_light])
             session.commit()
 
         # Re-fetch profiles for foreign keys
-        dark_p = session.query(ThemeProfile).filter_by(name="Full Dark").first()
-        light_p = session.query(ThemeProfile).filter_by(name="Full Light").first()
+        dark_p = session.query(ThemeProfile).filter_by(name="Dark Mode").first()
+        light_p = session.query(ThemeProfile).filter_by(name="Light Mode").first()
 
         # 2. Seed Default User Preferences
         pref = session.query(UserPreference).first()
         if not pref:
             pref = UserPreference(
-                current_theme="Full Dark",
+                current_theme="dark",
                 active_profile_id=dark_p.id if dark_p else None,
                 solar_schedule_enabled=True,
                 city_name="New Delhi",
@@ -69,7 +62,7 @@ def init_db():
             sunset_schedule = Schedule(
                 name="Evening Sunset Auto-Dark",
                 profile_id=dark_p.id,
-                target_theme="Full Dark",
+                target_theme="dark",
                 schedule_type="solar_sunset",
                 custom_time=None,
                 is_active=True
@@ -77,7 +70,7 @@ def init_db():
             sunrise_schedule = Schedule(
                 name="Morning Sunrise Auto-Light",
                 profile_id=light_p.id,
-                target_theme="Full Light",
+                target_theme="light",
                 schedule_type="solar_sunrise",
                 custom_time=None,
                 is_active=True

@@ -30,7 +30,7 @@ class SchedulerEngine:
 
     def _execute_switch(self, target_theme: str, source: str):
         logger.info(f"Executing scheduled theme switch to {target_theme} via {source}")
-        success = ThemeEngine.apply_profile(target_theme, trigger_source=source)
+        success = ThemeEngine.set_theme(target_theme, trigger_source=source)
         if success and self.on_theme_change_callback:
             try:
                 self.on_theme_change_callback(ThemeEngine.get_current_theme())
@@ -60,20 +60,20 @@ class SchedulerEngine:
             sunrise_dt = solar_times["sunrise"]
             sunset_dt = solar_times["sunset"]
 
-            # Sunrise -> Full Light
+            # Sunrise -> Light
             self.scheduler.add_job(
                 self._execute_switch,
                 trigger=CronTrigger(hour=sunrise_dt.hour, minute=sunrise_dt.minute),
-                args=["Full Light", "solar_sunrise"],
+                args=["light", "solar_sunrise"],
                 id="solar_sunrise_job",
                 replace_existing=True
             )
 
-            # Sunset -> Full Dark
+            # Sunset -> Dark
             self.scheduler.add_job(
                 self._execute_switch,
                 trigger=CronTrigger(hour=sunset_dt.hour, minute=sunset_dt.minute),
-                args=["Full Dark", "solar_sunset"],
+                args=["dark", "solar_sunset"],
                 id="solar_sunset_job",
                 replace_existing=True
             )
@@ -85,7 +85,7 @@ class SchedulerEngine:
                 continue
 
             stype = s.get("schedule_type")
-            target = s.get("target_theme", "Full Dark")
+            target = s.get("target_theme", "dark")
             sid = s.get("id")
 
             if stype == "custom_time" and s.get("custom_time"):

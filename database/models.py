@@ -11,9 +11,8 @@ class ThemeProfile(Base):
     __tablename__ = "theme_profiles"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(50), unique=True, nullable=False)  # e.g., "Full Dark", "Full Light", "Hybrid Focus"
-    system_theme = Column(String(10), nullable=False, default="dark")  # "dark" or "light" (Taskbar / Start)
-    apps_theme = Column(String(10), nullable=False, default="dark")    # "dark" or "light" (Windows Apps / Chrome)
+    name = Column(String(50), unique=True, nullable=False)  # "Dark Mode", "Light Mode"
+    base_theme = Column(String(10), nullable=False)          # "dark" or "light"
     wallpaper_path = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=utc_now)
 
@@ -25,8 +24,7 @@ class ThemeProfile(Base):
         return {
             "id": self.id,
             "name": self.name,
-            "system_theme": self.system_theme,
-            "apps_theme": self.apps_theme,
+            "base_theme": self.base_theme,
             "wallpaper_path": self.wallpaper_path,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
@@ -35,7 +33,7 @@ class UserPreference(Base):
     __tablename__ = "user_preferences"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    current_theme = Column(String(20), default="Full Dark")  # Active profile name or status
+    current_theme = Column(String(20), default="dark")  # "dark" or "light"
     active_profile_id = Column(Integer, ForeignKey("theme_profiles.id"), nullable=True)
     solar_schedule_enabled = Column(Boolean, default=True)
     city_name = Column(String(100), default="New Delhi")
@@ -65,7 +63,7 @@ class Schedule(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     profile_id = Column(Integer, ForeignKey("theme_profiles.id"), nullable=False)
-    target_theme = Column(String(20), nullable=False)  # Profile target or mode
+    target_theme = Column(String(20), nullable=False)  # "dark" or "light"
     schedule_type = Column(String(50), nullable=False)  # "solar_sunrise", "solar_sunset", "custom_time"
     custom_time = Column(String(10), nullable=True)     # "HH:MM" in 24-hr format
     is_active = Column(Boolean, default=True)
@@ -88,7 +86,7 @@ class SwitchLog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     profile_id = Column(Integer, ForeignKey("theme_profiles.id"), nullable=True)
-    switched_to = Column(String(30), nullable=False)    # e.g., "Full Dark", "Hybrid Focus", "light"
+    switched_to = Column(String(30), nullable=False)    # "dark" or "light"
     trigger_source = Column(String(50), nullable=False) # "manual_gui", "tray_menu", "solar_sunset", etc.
     execution_duration_ms = Column(Float, default=0.0)
     status = Column(String(20), default="SUCCESS")      # "SUCCESS" or "FAILED"

@@ -17,33 +17,30 @@ class TrayManager:
         self._thread = None
 
     def _get_icon_image(self):
-        state = ThemeEngine.get_current_theme_state()
-        icon_file = "icon_dark.png" if state["is_dark"] else "icon_light.png"
+        theme = ThemeEngine.get_current_theme()
+        icon_file = "icon_dark.png" if theme == "dark" else "icon_light.png"
         path = ASSETS_DIR / icon_file
         if path.exists():
             return Image.open(str(path))
-        return Image.new("RGBA", (16, 16), (255, 185, 0) if not state["is_dark"] else (90, 105, 240))
+        return Image.new("RGBA", (16, 16), (255, 185, 0) if theme == "light" else (90, 105, 240))
 
     def _create_menu(self):
-        state = ThemeEngine.get_current_theme_state()
-        current_profile = state["profile_name"]
+        theme = ThemeEngine.get_current_theme()
+        toggle_title = "☀️ Switch to Light Mode" if theme == "dark" else "🌙 Switch to Dark Mode"
 
         return Menu(
-            item(f"Active: {current_profile}", lambda: None, enabled=False),
+            item(f"Current: {theme.title()} Mode", lambda: None, enabled=False),
+            item(toggle_title, self._handle_toggle, default=True),
             Menu.SEPARATOR,
-            item("🌙 Full Dark", lambda: self._handle_switch_profile("Full Dark")),
-            item("☀️ Full Light", lambda: self._handle_switch_profile("Full Light")),
-            item("⚡ Hybrid Focus", lambda: self._handle_switch_profile("Hybrid Focus")),
-            Menu.SEPARATOR,
-            item("🖥️ Open Dashboard", self._handle_open_gui, default=True),
+            item("🖥️ Open Dashboard", self._handle_open_gui),
             item("❌ Exit IDEO", self._handle_exit)
         )
 
-    def _handle_switch_profile(self, profile_name):
-        ThemeEngine.apply_profile(profile_name, trigger_source="tray_menu")
+    def _handle_toggle(self, icon=None, item=None):
+        new_theme = ThemeEngine.toggle(trigger_source="tray_menu")
         self.update_state()
         if self.on_toggle_callback:
-            self.on_toggle_callback(ThemeEngine.get_current_theme())
+            self.on_toggle_callback(new_theme)
 
     def _handle_open_gui(self, icon=None, item=None):
         if self.on_open_gui_callback:
@@ -60,17 +57,17 @@ class TrayManager:
             try:
                 self.icon.icon = self._get_icon_image()
                 self.icon.menu = self._create_menu()
-                state = ThemeEngine.get_current_theme_state()
-                self.icon.title = f"IDEO — {state['profile_name']}"
+                theme = ThemeEngine.get_current_theme().title()
+                self.icon.title = f"IDEO — {theme} Mode"
             except Exception:
                 pass
 
     def start(self):
-        state = ThemeEngine.get_current_theme_state()
+        theme = ThemeEngine.get_current_theme().title()
         self.icon = pystray.Icon(
             "IDEO",
             self._get_icon_image(),
-            f"IDEO — {state['profile_name']}",
+            f"IDEO — {theme} Mode",
             menu=self._create_menu()
         )
         self._thread = threading.Thread(target=self.icon.run, daemon=True)

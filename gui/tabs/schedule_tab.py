@@ -12,7 +12,7 @@ class ScheduleTab(ctk.CTkFrame):
         # Title
         self.title_label = ctk.CTkLabel(
             self,
-            text="Automated Profile Schedules",
+            text="Automated Theme Schedules",
             font=ctk.CTkFont(size=20, weight="bold")
         )
         self.title_label.pack(pady=(15, 8))
@@ -41,7 +41,7 @@ class ScheduleTab(ctk.CTkFrame):
 
         self.solar_desc = ctk.CTkLabel(
             self.solar_section,
-            text="Sunrise ➔ Full Light  |  Sunset ➔ Full Dark automatically.",
+            text="Sunrise ➔ Light Mode  |  Sunset ➔ Dark Mode automatically.",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
@@ -50,7 +50,7 @@ class ScheduleTab(ctk.CTkFrame):
         # Custom Time Schedules Section
         self.custom_header = ctk.CTkLabel(
             self,
-            text="Custom Profile Schedules",
+            text="Custom Time Schedules",
             font=ctk.CTkFont(size=14, weight="bold")
         )
         self.custom_header.pack(pady=(10, 4), padx=20, anchor="w")
@@ -59,15 +59,15 @@ class ScheduleTab(ctk.CTkFrame):
         self.add_frame = ctk.CTkFrame(self, corner_radius=8)
         self.add_frame.pack(padx=20, pady=4, fill="x")
 
-        self.time_entry = ctk.CTkEntry(self.add_frame, placeholder_text="HH:MM (e.g. 23:00)", width=130)
+        self.time_entry = ctk.CTkEntry(self.add_frame, placeholder_text="HH:MM (e.g. 23:00)", width=140)
         self.time_entry.pack(side="left", padx=10, pady=8)
 
-        self.target_profile_menu = ctk.CTkOptionMenu(
+        self.target_menu = ctk.CTkOptionMenu(
             self.add_frame,
-            values=["Full Dark", "Full Light", "Hybrid Focus"],
-            width=120
+            values=["dark", "light"],
+            width=100
         )
-        self.target_profile_menu.pack(side="left", padx=5, pady=8)
+        self.target_menu.pack(side="left", padx=5, pady=8)
 
         self.add_btn = ctk.CTkButton(
             self.add_frame,
@@ -102,12 +102,12 @@ class ScheduleTab(ctk.CTkFrame):
             row = ctk.CTkFrame(self.schedules_scroll, corner_radius=6)
             row.pack(fill="x", pady=3, padx=5)
 
-            target = s.get("target_theme", "Full Dark")
-            icon = "🌙" if "dark" in target.lower() else ("☀️" if "light" in target.lower() else "⚡")
+            target = s.get("target_theme", "dark")
+            icon = "🌙" if target == "dark" else "☀️"
             stype = s.get("schedule_type")
             timing = s.get("custom_time") if stype == "custom_time" else stype.replace("_", " ").title()
 
-            info_text = f"{icon} {s.get('name', 'Schedule')}  •  {timing}  •  Target: {target}"
+            info_text = f"{icon} {s.get('name', 'Schedule')}  •  {timing}  •  Target: {target.upper()}"
             lbl = ctk.CTkLabel(row, text=info_text, font=ctk.CTkFont(size=11))
             lbl.pack(side="left", padx=10, pady=5)
 
@@ -136,7 +136,7 @@ class ScheduleTab(ctk.CTkFrame):
 
     def handle_add_schedule(self):
         raw_time = self.time_entry.get().strip()
-        target_profile_name = self.target_profile_menu.get()
+        target = self.target_menu.get().lower()
 
         if not raw_time or ":" not in raw_time:
             return
@@ -151,15 +151,16 @@ class ScheduleTab(ctk.CTkFrame):
             return
 
         # Fetch profile
-        profile = Repository.get_profile_by_name(target_profile_name)
+        p_name = "Dark Mode" if target == "dark" else "Light Mode"
+        profile = Repository.get_profile_by_name(p_name)
         if not profile:
             return
 
-        name = f"{target_profile_name} at {formatted_time}"
+        name = f"{target.title()} Mode at {formatted_time}"
         Repository.add_schedule(
             name=name,
             profile_id=profile["id"],
-            target_theme=target_profile_name,
+            target_theme=target,
             schedule_type="custom_time",
             custom_time=formatted_time
         )

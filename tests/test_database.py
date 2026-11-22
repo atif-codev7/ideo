@@ -16,19 +16,18 @@ def setup_db():
 def test_seeded_profiles():
     profiles = Repository.get_profiles()
     names = [p["name"] for p in profiles]
-    assert "Full Dark" in names
-    assert "Full Light" in names
-    assert "Hybrid Focus" in names
+    assert "Dark Mode" in names
+    assert "Light Mode" in names
 
 def test_create_and_delete_custom_profile():
     p = Repository.create_profile(
         name="Reading Night",
-        system_theme="dark",
-        apps_theme="light",
+        base_theme="dark",
         wallpaper_path="C:/wallpapers/night.jpg"
     )
     assert p["id"] is not None
     assert p["name"] == "Reading Night"
+    assert p["base_theme"] == "dark"
 
     # Delete
     deleted = Repository.delete_profile(p["id"])
@@ -36,26 +35,26 @@ def test_create_and_delete_custom_profile():
 
 def test_prevent_duplicate_profile_name():
     with pytest.raises(ValueError, match="already exists"):
-        Repository.create_profile("Full Dark", "dark", "dark")
+        Repository.create_profile("Dark Mode", "dark")
 
 def test_prevent_invalid_theme_in_profile():
     with pytest.raises(ValueError, match="must be 'dark' or 'light'"):
-        Repository.create_profile("Invalid Theme", "blue", "yellow")
+        Repository.create_profile("Invalid Theme", "blue")
 
 def test_schedule_profile_foreign_key():
-    dark_p = Repository.get_profile_by_name("Full Dark")
+    dark_p = Repository.get_profile_by_name("Dark Mode")
     assert dark_p is not None
 
     sched = Repository.add_schedule(
         name="Late Night Coding",
         profile_id=dark_p["id"],
-        target_theme="Full Dark",
+        target_theme="dark",
         schedule_type="custom_time",
         custom_time="01:30"
     )
     assert sched["profile_id"] == dark_p["id"]
 
-    # Deleting dark_p should be blocked by business constraint
+    # Deleting dark_p should be blocked by referential constraint
     with pytest.raises(ValueError, match="actively referenced"):
         Repository.delete_profile(dark_p["id"])
 
@@ -63,16 +62,16 @@ def test_schedule_profile_foreign_key():
     Repository.delete_schedule(sched["id"])
 
 def test_log_switch_and_empirical_metrics():
-    dark_p = Repository.get_profile_by_name("Full Dark")
+    dark_p = Repository.get_profile_by_name("Dark Mode")
     log_entry = Repository.log_switch(
-        switched_to="Full Dark",
+        switched_to="dark",
         trigger_source="pytest_telemetry",
-        duration_ms=42.5,
+        duration_ms=35.0,
         status="SUCCESS",
         profile_id=dark_p["id"] if dark_p else None
     )
-    assert log_entry["switched_to"] == "Full Dark"
-    assert log_entry["execution_duration_ms"] == 42.5
+    assert log_entry["switched_to"] == "dark"
+    assert log_entry["execution_duration_ms"] == 35.0
 
     # Check empirical metrics
     metrics = Repository.get_empirical_metrics()

@@ -38,11 +38,10 @@ class Repository:
             session.close()
 
     @staticmethod
-    def create_profile(name: str, system_theme: str, apps_theme: str, wallpaper_path: Optional[str] = None) -> Dict[str, Any]:
-        system_theme = system_theme.lower()
-        apps_theme = apps_theme.lower()
-        if system_theme not in ("dark", "light") or apps_theme not in ("dark", "light"):
-            raise ValueError("system_theme and apps_theme must be 'dark' or 'light'")
+    def create_profile(name: str, base_theme: str, wallpaper_path: Optional[str] = None) -> Dict[str, Any]:
+        base_theme = base_theme.lower()
+        if base_theme not in ("dark", "light"):
+            raise ValueError("base_theme must be 'dark' or 'light'")
 
         session = SessionLocal()
         try:
@@ -52,8 +51,7 @@ class Repository:
 
             new_profile = ThemeProfile(
                 name=name,
-                system_theme=system_theme,
-                apps_theme=apps_theme,
+                base_theme=base_theme,
                 wallpaper_path=wallpaper_path
             )
             session.add(new_profile)
@@ -66,7 +64,6 @@ class Repository:
     def delete_profile(profile_id: int) -> bool:
         session = SessionLocal()
         try:
-            # Check if referenced by active schedules
             active_refs = session.query(Schedule).filter(Schedule.profile_id == profile_id).count()
             if active_refs > 0:
                 raise ValueError("Cannot delete profile: actively referenced by configured schedules.")
@@ -126,10 +123,13 @@ class Repository:
     def add_schedule(name: str, profile_id: int, target_theme: str, schedule_type: str, custom_time: Optional[str] = None) -> Dict[str, Any]:
         session = SessionLocal()
         try:
-            # Verify profile exists
             profile = session.query(ThemeProfile).filter(ThemeProfile.id == profile_id).first()
             if not profile:
                 raise ValueError(f"Target theme profile with id {profile_id} does not exist.")
+
+            target_theme = target_theme.lower()
+            if target_theme not in ("dark", "light"):
+                raise ValueError("target_theme must be 'dark' or 'light'")
 
             new_schedule = Schedule(
                 name=name,
@@ -176,6 +176,7 @@ class Repository:
     def log_switch(switched_to: str, trigger_source: str, duration_ms: float = 0.0, status: str = "SUCCESS", profile_id: Optional[int] = None) -> Dict[str, Any]:
         session = SessionLocal()
         try:
+            switched_to = switched_to.lower()
             log_entry = SwitchLog(
                 profile_id=profile_id,
                 switched_to=switched_to,
@@ -186,7 +187,6 @@ class Repository:
             )
             session.add(log_entry)
 
-            # Update current_theme in UserPreference
             pref = session.query(UserPreference).first()
             if pref:
                 pref.current_theme = switched_to
@@ -221,9 +221,6 @@ class Repository:
     # --- Empirical Metrics Operations ---
     @staticmethod
     def get_empirical_metrics() -> Dict[str, Any]:
-        """
-        Calculates honest measured benchmarks from the SQLite database and psutil.
-        """
         session = SessionLocal()
         try:
             avg_latency = session.query(
@@ -232,7 +229,6 @@ class Repository:
 
             total_switches = session.query(func.count(SwitchLog.id)).scalar() or 0
 
-            # Measure actual Resident Set Size (RSS) memory of current process
             try:
                 process = psutil.Process()
                 mem_rss_mb = process.memory_info().rss / (1024 * 1024)

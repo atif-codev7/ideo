@@ -16,71 +16,42 @@ class HomeTab(ctk.CTkFrame):
             text="Intelligent Dynamic Environment Orchestrator",
             font=ctk.CTkFont(size=20, weight="bold")
         )
-        self.title_label.grid(row=0, column=0, pady=(15, 8), sticky="ew")
+        self.title_label.grid(row=0, column=0, pady=(20, 10), sticky="ew")
 
         # Current Status Card
         self.status_card = ctk.CTkFrame(self, corner_radius=12)
-        self.status_card.grid(row=1, column=0, padx=25, pady=6, sticky="ew")
+        self.status_card.grid(row=1, column=0, padx=25, pady=8, sticky="ew")
         self.status_card.grid_columnconfigure(0, weight=1)
 
         self.status_subtitle = ctk.CTkLabel(
             self.status_card,
-            text="ACTIVE ENVIRONMENT PROFILE",
+            text="SYSTEM DISPLAY STATUS",
             font=ctk.CTkFont(size=11, weight="bold"),
             text_color="gray"
         )
-        self.status_subtitle.pack(pady=(10, 2))
+        self.status_subtitle.pack(pady=(12, 2))
 
         self.theme_display = ctk.CTkLabel(
             self.status_card,
-            text="FULL DARK",
-            font=ctk.CTkFont(size=24, weight="bold")
+            text="DARK MODE",
+            font=ctk.CTkFont(size=26, weight="bold")
         )
-        self.theme_display.pack(pady=(0, 4))
+        self.theme_display.pack(pady=(0, 14))
 
-        self.theme_detail_label = ctk.CTkLabel(
-            self.status_card,
-            text="System: Dark  |  Apps: Dark",
-            font=ctk.CTkFont(size=12),
-            text_color="gray"
+        # Big Action Button
+        self.toggle_btn = ctk.CTkButton(
+            self,
+            text="☀️  Switch to Light Mode",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            height=46,
+            corner_radius=10,
+            command=self.handle_toggle
         )
-        self.theme_detail_label.pack(pady=(0, 10))
+        self.toggle_btn.grid(row=2, column=0, padx=25, pady=10, sticky="ew")
 
-        # Profile Switch Buttons Row (Full Dark, Full Light, Hybrid Focus)
-        self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.btn_frame.grid(row=2, column=0, padx=25, pady=8, sticky="ew")
-        self.btn_frame.grid_columnconfigure((0, 1, 2), weight=1)
-
-        self.btn_dark = ctk.CTkButton(
-            self.btn_frame,
-            text="🌙 Full Dark",
-            height=38,
-            corner_radius=8,
-            command=lambda: self.handle_apply_profile("Full Dark")
-        )
-        self.btn_dark.grid(row=0, column=0, padx=4, sticky="ew")
-
-        self.btn_light = ctk.CTkButton(
-            self.btn_frame,
-            text="☀️ Full Light",
-            height=38,
-            corner_radius=8,
-            command=lambda: self.handle_apply_profile("Full Light")
-        )
-        self.btn_light.grid(row=0, column=1, padx=4, sticky="ew")
-
-        self.btn_hybrid = ctk.CTkButton(
-            self.btn_frame,
-            text="⚡ Hybrid Focus",
-            height=38,
-            corner_radius=8,
-            command=lambda: self.handle_apply_profile("Hybrid Focus")
-        )
-        self.btn_hybrid.grid(row=0, column=2, padx=4, sticky="ew")
-
-        # Solar & Telemetry Card
+        # Solar Telemetry Card
         self.solar_card = ctk.CTkFrame(self, corner_radius=12)
-        self.solar_card.grid(row=3, column=0, padx=25, pady=6, sticky="ew")
+        self.solar_card.grid(row=3, column=0, padx=25, pady=8, sticky="ew")
         self.solar_card.grid_columnconfigure((0, 1), weight=1)
 
         self.solar_title = ctk.CTkLabel(
@@ -132,7 +103,7 @@ class HomeTab(ctk.CTkFrame):
 
         self.metric_ram_label = ctk.CTkLabel(
             self.metrics_card,
-            text="Process RSS: -- MB",
+            text="Memory RSS: -- MB",
             font=ctk.CTkFont(size=11, weight="bold")
         )
         self.metric_ram_label.grid(row=0, column=2, padx=10, pady=8)
@@ -140,39 +111,32 @@ class HomeTab(ctk.CTkFrame):
         # Footer
         self.footer_label = ctk.CTkLabel(
             self,
-            text="⚡ Low-Level COM IThemeManager2 | Native VTable Dispatch | 0 Explorer Restarts",
+            text="⚡ Low-Level COM IThemeManager2 | Defensive Fallback | 0 Explorer Restarts",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
-        self.footer_label.grid(row=5, column=0, pady=(6, 10))
+        self.footer_label.grid(row=5, column=0, pady=(8, 10))
 
         self.refresh_display()
 
     def refresh_display(self):
-        state = ThemeEngine.get_current_theme_state()
+        current_theme = ThemeEngine.get_current_theme()
         pref = Repository.get_preferences()
-        profile_name = state["profile_name"]
 
-        self.theme_display.configure(text=f"{profile_name.upper()}")
-        self.theme_detail_label.configure(
-            text=f"System (Taskbar): {state['system_theme'].title()}  |  Apps (Chrome/Explorer): {state['apps_theme'].title()}"
-        )
-
-        if profile_name == "Full Dark":
-            self.theme_display.configure(text_color="#60a5fa")
-            self.btn_dark.configure(fg_color="#1d4ed8")
-            self.btn_light.configure(fg_color=["#3B8ED0", "#1F6AA5"])
-            self.btn_hybrid.configure(fg_color=["#3B8ED0", "#1F6AA5"])
-        elif profile_name == "Full Light":
-            self.theme_display.configure(text_color="#f59e0b")
-            self.btn_dark.configure(fg_color=["#3B8ED0", "#1F6AA5"])
-            self.btn_light.configure(fg_color="#d97706")
-            self.btn_hybrid.configure(fg_color=["#3B8ED0", "#1F6AA5"])
-        elif profile_name == "Hybrid Focus":
-            self.theme_display.configure(text_color="#10b981")
-            self.btn_dark.configure(fg_color=["#3B8ED0", "#1F6AA5"])
-            self.btn_light.configure(fg_color=["#3B8ED0", "#1F6AA5"])
-            self.btn_hybrid.configure(fg_color="#059669")
+        if current_theme == "dark":
+            self.theme_display.configure(text="🌙  DARK MODE ACTIVE", text_color="#60a5fa")
+            self.toggle_btn.configure(
+                text="☀️  Switch to Light Mode",
+                fg_color="#f59e0b",
+                hover_color="#d97706"
+            )
+        else:
+            self.theme_display.configure(text="☀️  LIGHT MODE ACTIVE", text_color="#f59e0b")
+            self.toggle_btn.configure(
+                text="🌙  Switch to Dark Mode",
+                fg_color="#2563eb",
+                hover_color="#1d4ed8"
+            )
 
         # Update solar info
         lat = pref.get("latitude", 28.6139)
@@ -192,15 +156,15 @@ class HomeTab(ctk.CTkFrame):
 
         # Update empirical metrics
         metrics = Repository.get_empirical_metrics()
-        self.metric_latency_label.configure(text=f"⏱️ Avg Latency: {metrics['average_latency_ms']} ms")
+        self.metric_latency_label.configure(text=f"⏱️ Avg: {metrics['average_latency_ms']} ms")
         self.metric_count_label.configure(text=f"🔄 Switches: {metrics['total_switches']}")
         self.metric_ram_label.configure(text=f"💾 Memory: {metrics['resident_memory_mb']} MB")
 
-    def handle_apply_profile(self, profile_name):
-        ThemeEngine.apply_profile(profile_name, trigger_source="manual_gui")
+    def handle_toggle(self):
+        new_theme = ThemeEngine.toggle(trigger_source="manual_gui")
         self.refresh_display()
         if self.on_theme_switched_callback:
-            self.on_theme_switched_callback(ThemeEngine.get_current_theme())
+            self.on_theme_switched_callback(new_theme)
 
     def handle_solar_switch_toggle(self):
         is_on = bool(self.solar_toggle_switch.get())
